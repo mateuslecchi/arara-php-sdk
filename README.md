@@ -1,65 +1,252 @@
-# [Nome do SDK] - Arara SDK
+# Arara PHP SDK
 
-Este repositório contém o SDK oficial da Arara para **[Linguagem/Plataforma]**.
+SDK PHP oficial para integração com a API de WhatsApp da [Arara](https://ararahq.com).
 
-> **Nota para o mantenedor:** Este é um template base. Ao usar este repositório, substitua as informações entre colchetes `[...]` pelas informações específicas do seu projeto.
+[![PHP Version](https://img.shields.io/badge/php-%5E8.2-blue)](https://www.php.net/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## 📋 Sobre
+> **[Read in English](README.en.md)**
 
-Descreva brevemente o que este SDK faz e quais serviços da Arara ele cobre.
+## Sobre
 
-## 🚀 Instalação
+Este SDK permite integrar facilmente sua aplicação PHP com a API da Arara para envio de mensagens via WhatsApp, gerenciamento de templates e configuração de webhooks.
 
-Instruções de como instalar o SDK na linguagem específica.
+## Requisitos
 
-Exemplo genérico:
+- PHP 8.2 ou superior
+- Extensão JSON
+- Composer
+
+## Instalação
+
 ```bash
-# Comando de instalação
-install-command [package-name]
+composer require arara/php-sdk
 ```
 
-## ⚡ Começando
+## Começando
 
-Exemplo rápido de "Hello World" ou uso básico da biblioteca.
+### Inicialização
 
-```[linguagem]
-// Insira aqui um exemplo de código
-initialize(apiKey);
-doSomething();
+```php
+use Arara\Arara;
+
+// Forma simples
+$arara = new Arara('sua-api-key');
+
+// Com configurações customizadas
+$arara = new Arara('sua-api-key', [
+    'base_url' => 'https://api.ararahq.com',
+    'timeout' => 30,
+    'retry' => [
+        'times' => 3,
+        'delay' => 100,
+    ],
+]);
 ```
 
-## 📂 Estrutura do Projeto
+### Enviar Mensagem de Template
 
-Explique brevemente como o código está organizado.
+```php
+use Arara\DTOs\Message\SendMessageData;
 
-*   `src/` ou `lib/`: Código fonte.
-*   `tests/`: Testes automatizados.
-*   `docs/`: Documentação adicional.
-*   `examples/`: Projetos de exemplo.
+// Usando array
+$response = $arara->messages()->send([
+    'to' => '5511999999999',
+    'template_name' => 'order_confirmation',
+    'parameters' => [
+        'nome' => 'João Silva',
+        'pedido' => '12345',
+        'valor' => 'R$ 150,00',
+    ],
+    'language' => 'pt_BR',
+]);
 
-## 🤝 Como Contribuir
+// Usando DTO
+$message = new SendMessageData(
+    to: '5511999999999',
+    templateName: 'order_confirmation',
+    parameters: ['nome' => 'João'],
+);
 
-Agradecemos o interesse em contribuir com o ecossistema Arara! Este projeto segue um fluxo de contribuição padrão para garantir a qualidade e consistência.
+$response = $arara->messages()->send($message);
 
-### Fluxo de Trabalho (Workflow)
+// Verificar resultado
+if ($response->isSuccessful()) {
+    echo "Mensagem enviada! ID: " . $response->messageId();
+}
+```
 
-1.  **Fork** este repositório para a sua conta pessoal ou organização.
-2.  Crie uma **Branch** para a sua feature ou correção:
-    *   Use nomes descritivos, ex: `feat/nova-autenticacao`, `fix/erro-timeout`.
-3.  Faça suas alterações e **Commits**:
-    *   Escreva mensagens de commit claras e concisas (preferencialmente em inglês ou português, seguindo o padrão do projeto).
-4.  Faça o **Push** para o seu fork.
-5.  Abra um **Pull Request (PR)** para o repositório principal:
-    *   Descreva detalhadamente o que foi feito.
-    *   Linke issues relacionadas, se houver.
-    *   Aguarde a revisão da equipe.
+### Listar Templates
+
+```php
+$templates = $arara->templates()->list();
+
+foreach ($templates as $template) {
+    echo $template->name . ' - ' . $template->status . PHP_EOL;
+}
+
+// Obter template específico
+$template = $arara->templates()->get('order_confirmation');
+
+if ($template->isApproved()) {
+    echo "Template aprovado!";
+}
+```
+
+### Gerenciar Webhooks
+
+```php
+// Criar webhook
+$webhook = $arara->webhooks()->create([
+    'url' => 'https://meusite.com/webhook/arara',
+    'events' => ['message.delivered', 'message.read', 'cart.updated'],
+]);
+
+echo "Webhook criado com ID: " . $webhook->id;
+
+// Listar webhooks
+$webhooks = $arara->webhooks()->list();
+
+// Atualizar webhook
+$arara->webhooks()->update($webhook->id, [
+    'events' => ['message.delivered'],
+]);
+
+// Remover webhook
+$arara->webhooks()->delete($webhook->id);
+```
+
+### Helper para Telefones Brasileiros
+
+```php
+use Arara\Support\PhoneNumber;
+
+// Formatar para padrão E.164
+PhoneNumber::format('11999999999');      // +5511999999999
+PhoneNumber::format('(11) 99999-9999');  // +5511999999999
+
+// Validar número brasileiro
+PhoneNumber::isValid('11999999999');     // true
+PhoneNumber::isValid('1199999999');      // false (faltando dígito)
+
+// Detectar tipo
+PhoneNumber::isMobile('11999999999');    // true
+PhoneNumber::isLandline('1133334444');   // true
+
+// Formatar para exibição
+PhoneNumber::formatForDisplay('5511999999999'); // (11) 99999-9999
+```
+
+## Tratamento de Erros
+
+```php
+use Arara\Exceptions\AuthenticationException;
+use Arara\Exceptions\ValidationException;
+use Arara\Exceptions\RateLimitException;
+use Arara\Exceptions\ApiException;
+
+try {
+    $arara->messages()->send([
+        'to' => '5511999999999',
+        'template_name' => 'order_confirmation',
+    ]);
+} catch (AuthenticationException $e) {
+    // API Key inválida ou ausente (401)
+    echo "Erro de autenticação: " . $e->getMessage();
+} catch (ValidationException $e) {
+    // Dados inválidos (422)
+    echo "Erro de validação: " . $e->getMessage();
+    print_r($e->errors); // Detalhes dos erros
+} catch (RateLimitException $e) {
+    // Rate limit excedido (429)
+    echo "Rate limit excedido. Aguarde " . $e->retryAfter . " segundos.";
+} catch (ApiException $e) {
+    // Outros erros da API
+    echo "Erro: " . $e->getMessage() . " (Status: " . $e->statusCode . ")";
+}
+```
+
+## Estrutura do Projeto
+
+```
+src/
+├── Arara.php                    # Cliente principal (entry point)
+├── AraraClient.php              # Cliente HTTP interno
+├── Config.php                   # Configurações do SDK
+├── Contracts/                   # Interfaces
+├── DTOs/                        # Data Transfer Objects
+│   ├── Message/
+│   ├── Template/
+│   └── Webhook/
+├── Exceptions/                  # Exceções customizadas
+├── Http/                        # Cliente HTTP (Guzzle)
+├── Resources/                   # Resources da API
+│   ├── Messages.php
+│   ├── Templates.php
+│   └── Webhooks.php
+└── Support/                     # Helpers
+    └── PhoneNumber.php
+```
+
+## Desenvolvimento
+
+Este projeto foi desenvolvido com auxílio do [Claude Code](https://claude.ai/code), uma ferramenta de IA da Anthropic. Todo o código foi revisado e validado pelo mantenedor.
+
+### Instalar dependências
+
+```bash
+composer install
+```
+
+### Rodar testes
+
+```bash
+composer test
+# ou
+./vendor/bin/phpunit
+```
+
+### Análise estática
+
+```bash
+composer analyse
+# ou
+./vendor/bin/phpstan analyse src tests --level=8
+```
+
+### Formatar código
+
+```bash
+composer format
+# ou
+./vendor/bin/php-cs-fixer fix
+```
+
+### Todos os checks
+
+```bash
+composer check
+```
+
+## Como Contribuir
+
+1. Faça um **Fork** deste repositório
+2. Crie uma **Branch** para sua feature (`git checkout -b feat/nova-feature`)
+3. Faça suas alterações e **Commits**
+4. Faça o **Push** para o seu fork (`git push origin feat/nova-feature`)
+5. Abra um **Pull Request**
 
 ### Padrões de Código
 
-*   Siga as convenções de estilo da linguagem (ex: PEP8 para Python, StandardJS para JS/TS, Go Fmt para Go).
-*   Mantenha a cobertura de testes. Se adicionar uma nova funcionalidade, adicione testes para ela.
-*   Documente métodos e classes públicas.
+- PSR-12
+- Strict types em todos os arquivos
+- Type hints em todos os parâmetros e retornos
+- PHPStan level 8
 
-## 📄 Licença
+## Documentação da API
+
+Para mais informações sobre a API da Arara, consulte a [documentação oficial](https://docs.ararahq.com/api-reference).
+
+## Licença
 
 Este projeto está licenciado sob a [Licença MIT](LICENSE).
