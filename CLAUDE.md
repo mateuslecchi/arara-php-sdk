@@ -1,525 +1,295 @@
-# Arara PHP SDK
+# Arara PHP SDK - Maintenance Guide
 
-SDK PHP para integração com a API de WhatsApp da Arara (https://ararahq.com).
+Official PHP SDK for the Arara WhatsApp API (https://ararahq.com).
 
-## Visão Geral do Projeto
+## Project Status
 
-Este é um pacote PHP **puro** (framework-agnostic) que serve como SDK para a API da Arara, uma plataforma brasileira de comunicação via WhatsApp. O pacote deve funcionar em qualquer projeto PHP 8.2+ sem dependências de frameworks específicos.
+This SDK is **under active development**. The core structure is complete, but the package has not yet been published or tested against the live Arara API.
 
-Posteriormente, será criado um pacote separado `arara-laravel` que usará este como dependência e adicionará integrações específicas do Laravel (ServiceProvider, Facade, config publishing, etc.).
+### Implemented Features
 
-## Documentação da API
+- **Messages**: Send template messages via WhatsApp
+- **Templates**: List and retrieve available templates
+- **Webhooks**: Full CRUD operations for webhook management
+- **Phone Helper**: Brazilian phone number formatting and validation
+- **Error Handling**: Typed exceptions for all API error scenarios
 
-**URL Base:** `https://api.ararahq.com` (verificar na documentação oficial)
-**Documentação:** https://docs.ararahq.com/api-reference
-
-### Autenticação
-
-- Tipo: Bearer Token (API Key)
-- Header: `Authorization: Bearer {API_KEY}`
-- A API Key é obtida no dashboard da Arara e mostrada apenas uma vez
-
-### Endpoints Conhecidos (verificar documentação para lista completa)
+## Architecture Overview
 
 ```
-POST /v1/messages/send     - Enviar mensagem de template
-GET  /v1/templates         - Listar templates
-POST /v1/webhooks          - Configurar webhooks
+src/
+├── Arara.php                    # Main client (entry point)
+├── AraraClient.php              # Internal HTTP client
+├── Config.php                   # SDK configuration
+├── Contracts/
+│   ├── HttpClientInterface.php  # HTTP client interface
+│   └── ResourceInterface.php    # Base resource interface
+├── DTOs/
+│   ├── Message/
+│   │   ├── MessageResponse.php
+│   │   └── SendMessageData.php
+│   ├── Template/
+│   │   └── TemplateData.php
+│   └── Webhook/
+│       └── WebhookData.php
+├── Exceptions/
+│   ├── ApiException.php
+│   ├── AraraException.php
+│   ├── AuthenticationException.php
+│   ├── RateLimitException.php
+│   └── ValidationException.php
+├── Http/
+│   ├── GuzzleHttpClient.php
+│   └── Response.php
+├── Resources/
+│   ├── AbstractResource.php
+│   ├── Messages.php
+│   ├── Templates.php
+│   └── Webhooks.php
+└── Support/
+    └── PhoneNumber.php
 ```
 
-### Funcionalidades Principais
+## Code Standards
 
-1. **Envio de Mensagens de Template** - Enviar mensagens via templates pré-aprovados
-2. **Gerenciamento de Templates** - Listar e consultar templates disponíveis
-3. **Webhooks** - Configurar e receber notificações de eventos (ex: carrinho de compras)
+### Style Requirements
 
-## Arquitetura do Pacote
+- **PSR-12** coding standard
+- **Strict types** in all files (`declare(strict_types=1);`)
+- **Type hints** on all parameters and return types
+- **PHPStan level 8** compliance
+- **Readonly properties** where applicable
+- **Constructor property promotion**
 
-```
-arara-php/
-├── src/
-│   ├── Arara.php                      # Cliente principal (entry point)
-│   ├── AraraClient.php                # Cliente HTTP interno
-│   ├── Config.php                     # Configurações do SDK
-│   │
-│   ├── Contracts/
-│   │   ├── HttpClientInterface.php    # Interface para cliente HTTP
-│   │   └── ResourceInterface.php      # Interface base para resources
-│   │
-│   ├── Http/
-│   │   ├── GuzzleHttpClient.php       # Implementação com Guzzle
-│   │   └── Response.php               # Wrapper de resposta
-│   │
-│   ├── Resources/
-│   │   ├── AbstractResource.php       # Classe base para resources
-│   │   ├── Messages.php               # Resource de mensagens
-│   │   ├── Templates.php              # Resource de templates
-│   │   └── Webhooks.php               # Resource de webhooks
-│   │
-│   ├── DTOs/
-│   │   ├── Message/
-│   │   │   ├── SendMessageData.php    # DTO para envio de mensagem
-│   │   │   └── MessageResponse.php    # DTO de resposta
-│   │   ├── Template/
-│   │   │   └── TemplateData.php       # DTO de template
-│   │   └── Webhook/
-│   │       └── WebhookData.php        # DTO de webhook
-│   │
-│   ├── Exceptions/
-│   │   ├── AraraException.php         # Exception base
-│   │   ├── AuthenticationException.php
-│   │   ├── ValidationException.php
-│   │   ├── RateLimitException.php
-│   │   └── ApiException.php
-│   │
-│   └── Support/
-│       ├── PhoneNumber.php            # Helper para formatação de telefone BR
-│       └── Arr.php                    # Helper de arrays (se necessário)
-│
-├── tests/
-│   ├── Unit/
-│   │   ├── AraraTest.php
-│   │   ├── Resources/
-│   │   │   ├── MessagesTest.php
-│   │   │   ├── TemplatesTest.php
-│   │   │   └── WebhooksTest.php
-│   │   └── DTOs/
-│   │       └── SendMessageDataTest.php
-│   │
-│   └── Feature/
-│       └── Integration/
-│           └── SendMessageTest.php    # Testes com API real (opcional)
-│
-├── composer.json
-├── phpunit.xml
-├── phpstan.neon
-├── .php-cs-fixer.php
-├── README.md
-├── CHANGELOG.md
-├── LICENSE
-└── .github/
-    └── workflows/
-        ├── tests.yml
-        └── static-analysis.yml
+### Before Committing
+
+Always run the quality checks:
+
+```bash
+# Run all checks
+composer check
+
+# Or individually:
+composer test      # PHPUnit tests
+composer analyse   # PHPStan analysis
+composer format    # PHP-CS-Fixer
 ```
 
-## Especificações Técnicas
+## Maintenance Tasks
 
-### Requisitos
+### Bug Fixes
 
-- PHP 8.2+
-- Guzzle HTTP 7.0+
-- ext-json
+1. Create a test that reproduces the bug
+2. Fix the issue in the relevant class
+3. Ensure all existing tests pass
+4. Run PHPStan to verify type safety
+5. Update CHANGELOG.md
 
-### composer.json
+### Updating Dependencies
 
-```json
-{
-    "name": "seuvendor/arara-php",
-    "description": "SDK PHP para a API de WhatsApp da Arara",
-    "keywords": ["whatsapp", "arara", "sdk", "api", "sms", "messaging", "brazil"],
-    "license": "MIT",
-    "type": "library",
-    "require": {
-        "php": "^8.2",
-        "guzzlehttp/guzzle": "^7.0",
-        "ext-json": "*"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^11.0",
-        "phpstan/phpstan": "^1.10",
-        "friendsofphp/php-cs-fixer": "^3.0",
-        "mockery/mockery": "^1.6"
-    },
-    "autoload": {
-        "psr-4": {
-            "Arara\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Arara\\Tests\\": "tests/"
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "stable",
-    "prefer-stable": true
-}
+```bash
+composer update
+composer test
+composer analyse
 ```
 
-## Exemplos de Uso Final
+### API Changes
 
-### Inicialização
+When the Arara API changes:
 
-```php
-use Arara\Arara;
+1. Check the official documentation: https://docs.ararahq.com/api-reference
+2. Update the relevant Resource class
+3. Update or create DTOs as needed
+4. Add/update tests
+5. Update README examples if affected
 
-// Forma simples
-$arara = new Arara('sua-api-key');
+## Adding New Features
 
-// Com configurações customizadas
-$arara = new Arara('sua-api-key', [
-    'base_url' => 'https://api.ararahq.com',
-    'timeout' => 30,
-    'retry' => [
-        'times' => 3,
-        'delay' => 100,
-    ],
-]);
-```
+### New Resource
 
-### Enviar Mensagem de Template
+1. Create the Resource class in `src/Resources/`
+2. Extend `AbstractResource`
+3. Create DTOs in `src/DTOs/{ResourceName}/`
+4. Add the resource getter to `Arara.php`
+5. Write unit tests with mocked HTTP client
+6. Update README documentation
 
-```php
-use Arara\DTOs\Message\SendMessageData;
+### New DTO
 
-// Forma fluente
-$response = $arara->messages()->send(
-    to: '5511999999999',
-    templateName: 'order_confirmation',
-    parameters: [
-        'nome' => 'João Silva',
-        'pedido' => '12345',
-        'valor' => 'R$ 150,00'
-    ],
-    language: 'pt_BR'
-);
-
-// Usando DTO
-$message = new SendMessageData(
-    to: '5511999999999',
-    templateName: 'order_confirmation',
-    parameters: ['nome' => 'João']
-);
-
-$response = $arara->messages()->send($message);
-
-// Verificar resultado
-if ($response->isSuccessful()) {
-    echo "Mensagem enviada! ID: " . $response->messageId();
-}
-```
-
-### Listar Templates
-
-```php
-$templates = $arara->templates()->list();
-
-foreach ($templates as $template) {
-    echo $template->name . ' - ' . $template->status;
-}
-```
-
-### Configurar Webhook
-
-```php
-$arara->webhooks()->create([
-    'url' => 'https://meusite.com/webhook/arara',
-    'events' => ['message.delivered', 'message.read', 'cart.updated'],
-]);
-```
-
-## Fases de Desenvolvimento
-
-### Fase 1: Estrutura Base ✅
-- [ ] Inicializar projeto com composer
-- [ ] Criar estrutura de diretórios
-- [ ] Configurar autoload PSR-4
-- [ ] Criar classe Config
-- [ ] Criar interfaces (Contracts)
-- [ ] Criar exceptions
-
-### Fase 2: Cliente HTTP
-- [ ] Implementar HttpClientInterface
-- [ ] Implementar GuzzleHttpClient
-- [ ] Implementar Response wrapper
-- [ ] Adicionar retry logic
-- [ ] Adicionar timeout handling
-- [ ] Tratar erros HTTP (4xx, 5xx)
-
-### Fase 3: Cliente Principal
-- [ ] Implementar classe Arara (entry point)
-- [ ] Implementar AraraClient interno
-- [ ] Configurar autenticação Bearer
-- [ ] Adicionar headers padrão
-
-### Fase 4: Resources
-- [ ] Implementar AbstractResource
-- [ ] Implementar Messages resource
-- [ ] Implementar Templates resource
-- [ ] Implementar Webhooks resource
-
-### Fase 5: DTOs
-- [ ] Criar SendMessageData
-- [ ] Criar MessageResponse
-- [ ] Criar TemplateData
-- [ ] Criar WebhookData
-
-### Fase 6: Helpers
-- [ ] Implementar PhoneNumber (formatação BR)
-- [ ] Validação de números brasileiros
-
-### Fase 7: Testes
-- [ ] Configurar PHPUnit
-- [ ] Testes unitários para cada classe
-- [ ] Mocks do Guzzle para testes HTTP
-- [ ] Testes de integração (opcional)
-
-### Fase 8: Qualidade
-- [ ] Configurar PHPStan (level 8)
-- [ ] Configurar PHP-CS-Fixer
-- [ ] Configurar GitHub Actions
-- [ ] Adicionar badges ao README
-
-### Fase 9: Documentação
-- [ ] README completo com exemplos
-- [ ] CHANGELOG
-- [ ] Documentar todas as classes (PHPDoc)
-
-### Fase 10: Publicação
-- [ ] Criar repositório GitHub
-- [ ] Registrar no Packagist
-- [ ] Criar release v1.0.0
-
-## Padrões de Código
-
-### Estilo
-
-- PSR-12
-- Strict types em todos os arquivos
-- Type hints em todos os parâmetros e retornos
-- Properties promotion no construtor
-- Named arguments quando melhorar legibilidade
-- Readonly properties quando aplicável
-
-### Exemplo de Classe
+Follow this pattern:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace Arara\Resources;
+namespace Arara\DTOs\{Category};
 
-use Arara\Contracts\HttpClientInterface;
-use Arara\DTOs\Message\SendMessageData;
-use Arara\DTOs\Message\MessageResponse;
-use Arara\Exceptions\ApiException;
-
-final class Messages extends AbstractResource
-{
-    public function send(SendMessageData|array $data): MessageResponse
-    {
-        if (is_array($data)) {
-            $data = SendMessageData::fromArray($data);
-        }
-
-        $response = $this->client->post('/v1/messages/send', $data->toArray());
-
-        if (!$response->isSuccessful()) {
-            throw ApiException::fromResponse($response);
-        }
-
-        return MessageResponse::fromArray($response->json());
-    }
-}
-```
-
-### Exemplo de DTO
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Arara\DTOs\Message;
-
-final readonly class SendMessageData
+final readonly class NewData
 {
     public function __construct(
-        public string $to,
-        public string $templateName,
-        public array $parameters = [],
-        public string $language = 'pt_BR',
-    ) {}
+        public string $requiredField,
+        public ?string $optionalField = null,
+    ) {
+    }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(
-            to: $data['to'],
-            templateName: $data['template_name'] ?? $data['templateName'],
-            parameters: $data['parameters'] ?? [],
-            language: $data['language'] ?? 'pt_BR',
+            requiredField: $data['required_field'],
+            optionalField: $data['optional_field'] ?? null,
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [
-            'to' => $this->to,
-            'template_name' => $this->templateName,
-            'parameters' => $this->parameters,
-            'language' => $this->language,
+            'required_field' => $this->requiredField,
+            'optional_field' => $this->optionalField,
         ];
     }
 }
 ```
 
-### Exemplo de Exception
+### New Exception
+
+Only create new exceptions for distinct error scenarios that users need to handle differently.
+
+## Testing Guidelines
+
+### Unit Tests
+
+- Use **Mockery** for mocking the HTTP client
+- Test both success and error scenarios
+- Test DTO serialization/deserialization
+
+### Test Structure
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace Arara\Exceptions;
+namespace Arara\Tests\Unit\Resources;
 
+use Arara\Contracts\HttpClientInterface;
 use Arara\Http\Response;
+use Arara\Resources\NewResource;
+use Arara\Tests\TestCase;
+use Mockery;
+use Mockery\MockInterface;
 
-class ApiException extends AraraException
+final class NewResourceTest extends TestCase
 {
-    public function __construct(
-        string $message,
-        public readonly int $statusCode,
-        public readonly ?array $errors = null,
-        ?\Throwable $previous = null,
-    ) {
-        parent::__construct($message, $statusCode, $previous);
-    }
+    private HttpClientInterface&MockInterface $client;
+    private NewResource $resource;
 
-    public static function fromResponse(Response $response): self
+    protected function setUp(): void
     {
-        $body = $response->json();
+        parent::setUp();
+        $this->client = Mockery::mock(HttpClientInterface::class);
+        $this->resource = new NewResource($this->client);
+    }
 
-        return new self(
-            message: $body['message'] ?? 'Erro na API',
-            statusCode: $response->status(),
-            errors: $body['errors'] ?? null,
-        );
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
+    public function test_can_do_something(): void
+    {
+        $this->client
+            ->shouldReceive('post')
+            ->once()
+            ->andReturn(new Response(
+                statusCode: 200,
+                body: json_encode(['data' => ['id' => '123']]),
+            ));
+
+        $result = $this->resource->doSomething();
+
+        $this->assertSame('123', $result->id);
     }
 }
 ```
 
-## Tratamento de Erros
+## Error Handling Reference
 
-### HTTP Status Codes
+| HTTP Status | Exception                  | Use Case                    |
+|-------------|----------------------------|-----------------------------|
+| 401         | AuthenticationException    | Invalid or missing API Key  |
+| 422         | ValidationException        | Invalid request data        |
+| 429         | RateLimitException         | Rate limit exceeded         |
+| 4xx         | ApiException               | Other client errors         |
+| 5xx         | ApiException               | Server errors (with retry)  |
 
-| Status | Exception | Descrição |
-|--------|-----------|-----------|
-| 401 | AuthenticationException | API Key inválida ou ausente |
-| 422 | ValidationException | Dados inválidos |
-| 429 | RateLimitException | Rate limit excedido |
-| 4xx | ApiException | Erro do cliente |
-| 5xx | ApiException | Erro do servidor |
+## API Reference
 
-### Exemplo de Tratamento
+**Base URL**: `https://api.ararahq.com`
+**Documentation**: https://docs.ararahq.com/api-reference
 
-```php
-use Arara\Exceptions\AuthenticationException;
-use Arara\Exceptions\ValidationException;
-use Arara\Exceptions\RateLimitException;
-use Arara\Exceptions\ApiException;
+### Current Endpoints
 
-try {
-    $arara->messages()->send(...);
-} catch (AuthenticationException $e) {
-    // API Key inválida
-} catch (ValidationException $e) {
-    // Dados inválidos - $e->errors contém detalhes
-} catch (RateLimitException $e) {
-    // Aguardar antes de tentar novamente
-    sleep($e->retryAfter);
-} catch (ApiException $e) {
-    // Outro erro da API
-}
+```
+POST /v1/messages/send     - Send template message
+GET  /v1/templates         - List templates
+GET  /v1/templates/{name}  - Get template by name
+GET  /v1/webhooks          - List webhooks
+POST /v1/webhooks          - Create webhook
+GET  /v1/webhooks/{id}     - Get webhook by ID
+PATCH /v1/webhooks/{id}    - Update webhook
+DELETE /v1/webhooks/{id}   - Delete webhook
 ```
 
-## Helpers para Brasil
+## Release Process
 
-### PhoneNumber
+1. Update version in relevant files
+2. Update CHANGELOG.md with changes
+3. Run full test suite: `composer check`
+4. Create git tag: `git tag v1.x.x`
+5. Push tag: `git push origin v1.x.x`
+6. Create GitHub release with changelog
 
-```php
-use Arara\Support\PhoneNumber;
+## Future Roadmap
 
-// Formatar para padrão E.164
-PhoneNumber::format('11999999999');      // +5511999999999
-PhoneNumber::format('(11) 99999-9999');  // +5511999999999
-PhoneNumber::format('+5511999999999');   // +5511999999999
+### Planned
 
-// Validar número brasileiro
-PhoneNumber::isValid('11999999999');     // true
-PhoneNumber::isValid('1199999999');      // false (faltando dígito)
+- [ ] **arara-laravel** package - Laravel integration with ServiceProvider, Facade, config publishing
+- [ ] GitHub Actions CI/CD pipeline
+- [ ] Packagist publication
 
-// Detectar tipo
-PhoneNumber::isMobile('11999999999');    // true
-PhoneNumber::isLandline('1133334444');   // true
-```
+### Potential Enhancements
 
-## Notas de Implementação
+- PSR-3 Logger integration for debugging
+- Webhook signature verification (if Arara implements signing)
+- Media message support (when available in API)
+- Conversation/session management (when available in API)
 
-### IMPORTANTE: Consultar Documentação
-
-Antes de implementar cada resource, **SEMPRE** consultar a documentação oficial em:
-- https://docs.ararahq.com/api-reference/authentication
-- https://docs.ararahq.com/api-reference/endpoint/send
-- https://docs.ararahq.com/api-reference/endpoint/webhook
-
-Os endpoints, parâmetros e respostas documentados aqui são baseados na introdução da documentação. A implementação deve seguir a especificação oficial da API.
-
-### Pontos de Atenção
-
-1. **Rate Limiting**: Verificar se a API tem rate limiting e implementar backoff
-2. **Retry Logic**: Implementar retry automático para erros 5xx e timeouts
-3. **Validação**: Validar dados localmente antes de enviar para a API
-4. **Logging**: Considerar PSR-3 LoggerInterface opcional para debug
-5. **Webhook Verification**: Se a Arara assinar webhooks, implementar verificação
-
-### Referências de SDKs Similares
-
-Consultar para inspiração de design:
-- `stripe/stripe-php` - Excelente exemplo de SDK PHP
-- `twilio/sdk` - Bom exemplo de API de messaging
-- `laravel/vonage-notification-channel` - Integração com Vonage
-
-## Comandos Úteis
+## Useful Commands
 
 ```bash
-# Instalar dependências
-composer install
+# Development
+composer install          # Install dependencies
+composer test             # Run PHPUnit tests
+composer analyse          # Run PHPStan
+composer format           # Run PHP-CS-Fixer
+composer check            # Run all checks
 
-# Rodar testes
-composer test
-# ou
-./vendor/bin/phpunit
-
-# Análise estática
-composer analyse
-# ou
-./vendor/bin/phpstan analyse
-
-# Formatar código
-composer format
-# ou
-./vendor/bin/php-cs-fixer fix
-
-# Todos os checks
-composer check
+# Git
+git status                # Check changes
+git diff                  # View changes
+git log --oneline -10     # Recent commits
 ```
 
-## Scripts do composer.json
+## Support
 
-```json
-{
-    "scripts": {
-        "test": "phpunit",
-        "analyse": "phpstan analyse src tests --level=8",
-        "format": "php-cs-fixer fix",
-        "check": [
-            "@analyse",
-            "@test"
-        ]
-    }
-}
-```
+- **API Documentation**: https://docs.ararahq.com/api-reference
+- **Issues**: Report bugs and feature requests on GitHub
+- **SDK Design Reference**: stripe/stripe-php, twilio/sdk
