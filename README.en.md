@@ -14,6 +14,7 @@ At the current state, the SDK exposes:
 - `Arara\Config` for auth and transport settings.
 - `Arara\Arara` as the main client.
 - `Arara::sendMessage()` to send messages through `POST /messages`.
+- Specific exceptions for HTTP error handling (400, 401, 404, 422, 500).
 
 ## Requirements
 
@@ -93,6 +94,40 @@ $arara = new Arara($config, $http);
 ```
 
 When a custom `Client` is injected, it is used directly.
+
+## Error handling
+
+The SDK throws specific exceptions for each HTTP error type:
+
+| Exception | HTTP Status |
+|-----------|------------|
+| `BadRequestException` | 400 |
+| `AuthenticationException` | 401 |
+| `NotFoundException` | 404 |
+| `ValidationException` | 422 |
+| `InternalServerException` | 500 |
+| `AraraException` | Others |
+
+All extend `AraraException`, which exposes `statusCode`, `response` (decoded body), and `getMessage()`.
+
+```php
+use Arara\Exceptions\AraraException;
+use Arara\Exceptions\AuthenticationException;
+use Arara\Exceptions\ValidationException;
+
+try {
+    $arara->sendMessage('5511999999999', 'welcome');
+} catch (AuthenticationException $e) {
+    // Invalid API key (401)
+    echo $e->getMessage();
+} catch (ValidationException $e) {
+    // Invalid parameters (422)
+    print_r($e->response); // API error details
+} catch (AraraException $e) {
+    // Any other error
+    echo "Error {$e->statusCode}: {$e->getMessage()}";
+}
+```
 
 ## Used endpoint
 
