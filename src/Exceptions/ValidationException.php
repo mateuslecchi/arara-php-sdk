@@ -9,8 +9,8 @@ final class ValidationException extends AraraException
     /**
      * @param array<string, mixed>|null $response
      */
-    public function __construct(?array $response = null)
+    public function __construct(?array $response = null, ?string $message = null)
     {
-        parent::__construct(422, $response);
+        parent::__construct(422, $response, $message);
     }
 }

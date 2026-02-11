@@ -34,6 +34,18 @@ final class Arara
 
     public function sendMessage(string $receiver, string $templateName, array $variables = []): array
     {
+        if (trim($receiver) === '') {
+            throw new ValidationException(message: 'O campo receiver é obrigatório.');
+        }
+
+        if (!preg_match('/^whatsapp:\+\d{8,15}$/', $receiver)) {
+            throw new ValidationException(message: 'O receiver deve seguir o formato whatsapp:+<número> (ex: whatsapp:+5511999999999).');
+        }
+
+        if (trim($templateName) === '') {
+            throw new ValidationException(message: 'O campo templateName é obrigatório.');
+        }
+
         try {
             $response = $this->client->post('messages', [
                 'json' => [
