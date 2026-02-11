@@ -28,6 +28,8 @@ No estado atual, a SDK expõe:
 composer require arara/arara-php-sdk
 ```
 
+Para a documentação completa da API, acesse [docs.ararahq.com](https://docs.ararahq.com).
+
 ## Uso rápido
 
 ### Criar configuração e cliente
@@ -47,7 +49,7 @@ $arara = new Arara($config);
 
 ```php
 $response = $arara->sendMessage(
-    receiver: '5511999999999',
+    receiver: 'whatsapp:+5511999999999',
     templateName: 'order_confirmation',
     variables: [
         'orderId' => '12345',
@@ -116,7 +118,7 @@ use Arara\Exceptions\AuthenticationException;
 use Arara\Exceptions\ValidationException;
 
 try {
-    $arara->sendMessage('5511999999999', 'welcome');
+    $arara->sendMessage('whatsapp:+5511999999999', 'welcome');
 } catch (AuthenticationException $e) {
     // API key inválida (401)
     echo $e->getMessage();
@@ -137,7 +139,7 @@ Payload enviado por `sendMessage()`:
 
 ```json
 {
-  "receiver": "5511999999999",
+  "receiver": "whatsapp:+5511999999999",
   "templateName": "order_confirmation",
   "variables": {}
 }
