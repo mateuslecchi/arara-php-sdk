@@ -5,7 +5,7 @@ Official PHP SDK for **AraraHQ**. Simple, typed, and developer-first.
 ## Installation
 
 ```bash
-composer require arara/arara-php-sdk
+composer require ararahq/sdk
 ```
 
 ## Configuration

@@ -1,5 +1,5 @@
 {
-    "name": "arara/arara-php-sdk",
+    "name": "ararahq/sdk",
     "description": "Official PHP SDK for AraraHQ platform. Simple, typed, and developer-first.",
     "keywords": [
         "whatsapp",
