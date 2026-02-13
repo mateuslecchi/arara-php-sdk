@@ -16,3 +16,16 @@ __pycache__/
 *.egg-info/
 .env
 .env.local
+
+# PHP
+composer.lock
+.php-cs-fixer.cache
+.phpunit.cache/
+.phpstan.cache/
+coverage/
+
+# AI
+AGENTS.md
+CLAUDE.md
+AGENTS.MD
+CLAUDE.MD
