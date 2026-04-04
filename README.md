@@ -1,6 +1,11 @@
 # Arara PHP SDK
 
-Official PHP SDK for **AraraHQ**. Simple, typed, and developer-first.
+[![Packagist](https://img.shields.io/packagist/v/ararahq/sdk)](https://packagist.org/packages/ararahq/sdk)
+[![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue)](https://www.php.net/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Docs](https://img.shields.io/badge/Docs-docs.ararahq.com-orange)](https://docs.ararahq.com)
+
+Official PHP SDK for **[AraraHQ](https://ararahq.com)** — the developer-first WhatsApp API. Simple, typed, and developer-first.
 
 ## Installation
 
